@@ -14,6 +14,7 @@ var generos;
 var endOfLine = require('os').EOL;
 
 // init();
+console.log("---------------- BOT INICIADO. ----------------");
 setInterval(Loop, 1800000);
 
 async function Loop() {
