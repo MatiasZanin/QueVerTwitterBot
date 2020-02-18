@@ -14,7 +14,7 @@ var generos;
 var endOfLine = require('os').EOL;
 
 // init();
-setInterval(Loop, 5000); //1800000);
+setInterval(Loop, 1800000);
 
 async function Loop() {
     await init();
