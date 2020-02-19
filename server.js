@@ -2,6 +2,7 @@ var Twiter = require('twitter');
 var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 var fs = require('fs'),
     request = require('request');
+var express = require('express');
 
 var cliente = new Twiter({
     consumer_key: 'nv9dX4YecJjKTqpOjlqXXYL85',
@@ -11,9 +12,9 @@ var cliente = new Twiter({
 });
 
 var generos;
-var endOfLine = require('os').EOL;
 
-var express = require('express');
+console.log("---------------- BOT INICIADO. ----------------");
+
 var app = express();
 
 app.set('port', (process.env.PORT || 5000));
@@ -26,7 +27,6 @@ app.get('/', function(request, response) {
     console.log('App is running, server is listening on port ', app.get('port'));
 });
 
-console.log("---------------- BOT INICIADO. ----------------");
 
 setInterval(Loop, 1800000);
 
