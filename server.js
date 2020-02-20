@@ -82,6 +82,13 @@ async function Loop() {
     console.log('\r');
 }
 
+var reqTimer = setTimeout(function wakeUp() {
+    request("https://quever-bot.herokuapp.com", function() {
+       console.log("WAKE UP DYNO");
+    });
+    return reqTimer = setTimeout(wakeUp, 1200000);
+ }, 1200000);
+
 function ResumeToArray(resumen) {
     var arr = [];
 
