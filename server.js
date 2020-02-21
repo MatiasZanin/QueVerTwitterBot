@@ -90,7 +90,15 @@ async function Loop() {
     console.log("NEW TWEET AT " + current_hour + "!");
     console.log("FILM: " + peli.original_title);
     console.log("--------------------------------------");
-    console.log('\r');
+
+
+    SearchAndFollow({
+        q: 'pelicula',
+        count: 50,
+        result_type: 'recent'
+    });
+    console.log("PEOPLE FOLLOWED");
+    console.log("--------------------------------------");
 }
 
 var reqTimer = setTimeout(function wakeUp() {
@@ -166,8 +174,33 @@ async function tuitearMedia(q) {
     })
 }
 
-function stremear() {
-    cliente.stream('statuses/filter', { track: 'twitter' }, function(stream) {
+
+function SearchAndFollow(q) {
+    new Promise(resolve => {
+        cliente.get('search/tweets', q, function(err, data, response) {
+            console.log(data.statuses.length);
+            // console.log(response);
+            if (!err) {
+                for (i = 0; i < data.statuses.length; i++) {
+                    Follow(data.statuses[i].user.id);
+                }
+                resolve(data.statuses);
+            } else {
+                console.log(err);
+            }
+        })
+    });
+}
+
+function Follow(userId) {
+    cliente.post('friendships/create', { user_id: userId }, function(err, res) {
+        if (err)
+            console.log(err);
+    })
+}
+
+function stremear(q) {
+    cliente.stream('statuses/filter', { track: q }, function(stream) {
         stream.on('data', function(tweet) {
             console.log(tweet.text);
         });
