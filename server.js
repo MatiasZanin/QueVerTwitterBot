@@ -20,10 +20,10 @@ var app = express();
 app.set('port', (process.env.PORT || 5000));
 
 //For avoidong Heroku $PORT error
-app.get('/', function(request, response) {
+app.get('/', function (request, response) {
     var result = 'App is running'
     response.send(result);
-}).listen(app.get('port'), function() {
+}).listen(app.get('port'), function () {
     console.log('App is running, server is listening on port ', app.get('port'));
 });
 
@@ -41,6 +41,12 @@ async function Loop() {
     var peli = listPelis[ranPeli];
     var multimedia = true;
 
+    if (!isASCII(peli.original_title)) {
+        Loop();
+        console.log('Pelicula salta, titulo: ' + peli.original_title);
+        return;
+    }
+
     if (peli.poster_path != null && peli.poster_path != '')
         await download('https://image.tmdb.org/t/p/w500/' + peli.poster_path, 'image.jpg');
     else
@@ -48,7 +54,7 @@ async function Loop() {
 
     var generosPeli = [];
     peli.genre_ids.forEach(g => {
-        generosPeli.push(generos.genres.find(function(el) {
+        generosPeli.push(generos.genres.find(function (el) {
             return el.id == g;
         }).name);
     })
@@ -83,11 +89,11 @@ async function Loop() {
 }
 
 var reqTimer = setTimeout(function wakeUp() {
-    request("https://quever-bot.herokuapp.com", function() {
-       console.log("WAKE UP DYNO");
+    request("https://quever-bot.herokuapp.com", function () {
+        console.log("WAKE UP DYNO");
     });
     return reqTimer = setTimeout(wakeUp, 1200000);
- }, 1200000);
+}, 1200000);
 
 function ResumeToArray(resumen) {
     var arr = [];
@@ -129,7 +135,7 @@ async function tuitearMedia(q) {
         var data = require('fs').readFileSync('image.jpg');
 
         // Make post request on media endpoint. Pass file data as media parameter
-        cliente.post('media/upload', { media: data }, function(error, media, response) {
+        cliente.post('media/upload', { media: data }, function (error, media, response) {
 
             if (!error) {
 
@@ -142,7 +148,7 @@ async function tuitearMedia(q) {
                     media_ids: media.media_id_string // Pass the media id string
                 }
 
-                cliente.post('statuses/update', status, function(error, tweet, response) {
+                cliente.post('statuses/update', status, function (error, tweet, response) {
                     if (!error) {
                         // console.log(tweet);
                         var jsnTweet = JSON.parse(JSON.stringify(tweet));
@@ -156,12 +162,12 @@ async function tuitearMedia(q) {
 }
 
 function stremear() {
-    cliente.stream('statuses/filter', { track: 'twitter' }, function(stream) {
-        stream.on('data', function(tweet) {
+    cliente.stream('statuses/filter', { track: 'twitter' }, function (stream) {
+        stream.on('data', function (tweet) {
             console.log(tweet.text);
         });
 
-        stream.on('error', function(error) {
+        stream.on('error', function (error) {
             console.log(error);
         });
     });
@@ -182,7 +188,7 @@ async function asyncResponder() {
 
 function LeerTweets() {
     return new Promise(resolve => {
-        cliente.get('search/tweets', { q: 'Test 128998' }, function(error, tweets, response) {
+        cliente.get('search/tweets', { q: 'Test 128998' }, function (error, tweets, response) {
             // var r = JSON.parse(JSON.stringify(tweets));
             // console.log(r.statuses[0].text);
             resolve(tweets);
@@ -198,7 +204,7 @@ function Responder(q, id) {
         };
 
         cliente.post('statuses/update', res,
-            function(err, data, response) {
+            function (err, data, response) {
                 resolve(data.id_str);
             }
         );
@@ -219,7 +225,7 @@ function GetUrl(genre) {
         Http.open("GET", url);
         Http.send();
 
-        Http.onload = function() {
+        Http.onload = function () {
             var r = JSON.parse((Http.responseText));
             // console.log(r.results[0].title);
             resolve({
@@ -237,7 +243,7 @@ function LeerPelicula(url, page) {
         Http.open("GET", url);
         Http.send();
 
-        Http.onload = function() {
+        Http.onload = function () {
             var r = JSON.parse((Http.responseText));
             // console.log(r.results[0].title);
             resolve(r.results);
@@ -252,7 +258,7 @@ function ListaGeneros() {
         Http.open("GET", url);
         Http.send();
 
-        Http.onload = function() {
+        Http.onload = function () {
             resolve(Http.responseText);
         }
     })
@@ -268,10 +274,14 @@ async function ObtenerGeneros() {
 
 async function download(uri, filename) {
     return new Promise(resolve => {
-        request.head(uri, function(err, res, body) {
-            request(uri).pipe(fs.createWriteStream(filename)).on('close', function() {
+        request.head(uri, function (err, res, body) {
+            request(uri).pipe(fs.createWriteStream(filename)).on('close', function () {
                 resolve(true);
             });
         });
     })
 };
+
+function isASCII(str) {
+    return /^[\x00-\x7F]*$/.test(str);
+}
