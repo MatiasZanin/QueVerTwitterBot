@@ -49,8 +49,12 @@ async function Loop() {
 
     if (peli.poster_path != null && peli.poster_path != '')
         await download('https://image.tmdb.org/t/p/w500/' + peli.poster_path, 'image.jpg');
-    else
+    else{
         multimedia = false;
+        Loop();
+        console.log('No tenia poster.');
+        return;
+    }
 
     var generosPeli = [];
     peli.genre_ids.forEach(g => {
@@ -81,6 +85,7 @@ async function Loop() {
     }
 
     var date = new Date();
+    date.setMinutes(date.getMinutes() - 180);
     var current_hour = date.getHours() + ':' + date.getMinutes();
     console.log("NEW TWEET AT " + current_hour + "!");
     console.log("FILM: " + peli.original_title);
