@@ -28,7 +28,8 @@ app.get('/', function(request, response) {
 });
 
 
-setInterval(Loop, 1800000);
+//setInterval(Loop, 1800000);
+Loop();
 
 async function Loop() {
     await init();
@@ -257,7 +258,8 @@ function GetUrl(genre) {
         var params = [
             'api_key=a14057df1b919c8d534bd28011b0127d',
             'language=es',
-            'with_genres=' + genre
+            'with_genres=' + genre,
+            'release_date.gte=1985-01-01'
         ];
         const url = 'https://api.themoviedb.org/3/discover/movie?' + params.join('&');
         Http.open("GET", url);
