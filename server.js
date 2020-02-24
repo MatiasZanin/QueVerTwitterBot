@@ -28,8 +28,7 @@ app.get('/', function(request, response) {
 });
 
 
-//setInterval(Loop, 1800000);
-Loop();
+setInterval(Loop, 1800000);
 
 async function Loop() {
     await init();
