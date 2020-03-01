@@ -3,6 +3,8 @@ var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 var fs = require('fs'),
     request = require('request');
 var express = require('express');
+var path = require('path');
+var Canvas = require('canvas');
 
 var cliente = new Twiter({
     consumer_key: 'nv9dX4YecJjKTqpOjlqXXYL85',
@@ -12,6 +14,7 @@ var cliente = new Twiter({
 });
 
 var generos;
+var cantResumes = 0;
 
 console.log("---------------- BOT INICIADO. ----------------");
 
@@ -28,8 +31,9 @@ app.get('/', function(request, response) {
 });
 
 
-setInterval(Loop, 1800000);
-
+//setInterval(Loop, 1800000);
+Loop();
+//removeResumes();
 async function Loop() {
     await init();
     var ranGen = Math.floor(Math.random() * (generos.genres.length));
@@ -69,36 +73,54 @@ async function Loop() {
     if (tituloGeneros.length > 279)
         tituloGeneros = tituloGeneros.substring(0, 279);
 
-    var resumen = ResumeToArray(peli.overview); //.match(/.{1,143}/g);
+    if (peli.overview)
+        await TextToImg(peli.original_title, peli.overview, "resumen");
+    else {
+        console.log("Pelicula sin resumen");
+        Loop();
+        return;
+    }
+
     // console.log(resumen);
     var resMedia;
-    if (multimedia)
-        resMedia = await tuitearMedia(tituloGeneros);
-    else
-        resMedia = await tuitear(tituloGeneros)
+    if (multimedia) {
+        //resMedia = await tuitearMedia(tituloGeneros);
+        console.log('Tweeteando');
+        await TweetMediasAndStatus(tituloGeneros);
+    } else {
+        console.log("SIN PORTADA");
+        Loop();
+        return;
+    }
+    //resMedia = await tuitear(tituloGeneros)
 
+    /* RESUMEN EN TWEETS
+    var resumen = ResumeToArray(peli.overview); //.match(/.{1,143}/g);
     var lastTwId = resMedia.id_str;
     if (resumen != null) {
         for (let i = 0; i < resumen.length; i++) {
             lastTwId = await Responder(resumen[i], lastTwId);
         }
     }
+    */
 
     var date = new Date();
     date.setMinutes(date.getMinutes() - 180);
     var current_hour = date.getHours() + ':' + date.getMinutes();
+    cantResumes = 0;
     console.log("NEW TWEET AT " + current_hour + "!");
     console.log("FILM: " + peli.original_title);
     console.log("--------------------------------------");
 
 
-    SearchAndFollow({
-        q: 'pelicula',
-        count: 50,
-        result_type: 'recent'
-    });
+    // SearchAndFollow({
+    //     q: 'pelicula',
+    //     count: 50,
+    //     result_type: 'recent'
+    // });
     console.log("PEOPLE FOLLOWED");
     console.log("--------------------------------------");
+    removeResumes();
 }
 
 var reqTimer = setTimeout(function wakeUp() {
@@ -107,6 +129,103 @@ var reqTimer = setTimeout(function wakeUp() {
     });
     return reqTimer = setTimeout(wakeUp, 1200000);
 }, 1200000);
+
+function removeResumes() {
+    try {
+        fs.unlinkSync("resumen.jpg");
+        fs.unlinkSync("resumenx.jpg");
+        fs.unlinkSync("resumenxx.jpg");
+    } catch (err) {
+        //console.log(err);
+    }
+}
+
+function fontFile(name) {
+    return path.join(__dirname, '/', name);
+}
+
+//TextToImg("HOLA GENTE COMO ESTAN ESTO ES UN EJEMPLO PARA VER SI ESTA COSA FUNCA XDDD SUSCRIBITE PAPA NO SEAS GATO AH.");
+
+async function TextToImg(title, resumen, nombreArchivo, withTitle = true) {
+    return new Promise(async resolve => {
+        Canvas.registerFont(fontFile('arial.ttf'), { family: 'arial' });
+
+        var line = 0;
+        var canvas = Canvas.createCanvas(1280, 1920);
+        var ctx = canvas.getContext('2d');
+
+        var Image = Canvas.Image;
+        var img = new Image();
+        img.src = 'molde_resumen.jpg';
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = '#ff4902';
+        ctx.textAlign = 'center';
+
+        var lineTitle = 0;
+        if (withTitle) {
+            ctx.textBaseline = 'middle';
+            ctx.font = '60pt arial';
+
+            var newTitle = "";
+            var arrTitle = title.split(" "),
+                i;
+
+            for (let i = 0; i < arrTitle.length; i++) {
+                var newTitle2 = newTitle + arrTitle[i] + " ";
+                if (ctx.measureText(newTitle2).width > 1100) {
+                    newTitle += '\n' + arrTitle[i] + " ";
+                    lineTitle++;
+                } else
+                    newTitle = newTitle2;
+            }
+
+            ctx.fillText(newTitle, (canvas.width / 2), 230);
+        }
+        ctx.fillStyle = 'black';
+        ctx.font = '50pt arial';
+
+        var arr = resumen.split(" "),
+            i;
+
+        var newRes = "";
+        for (let i = 0; i < arr.length; i++) {
+            var newRes2 = newRes + arr[i] + " ";
+            if (ctx.measureText(newRes2).width > 1000) {
+                var maxLines = 19;
+                if (withTitle)
+                    maxLines = 17 - lineTitle;
+                if (line == maxLines) {
+                    cantResumes++;
+                    if (cantResumes < 3) {
+                        await TextToImg('', arr.slice(i, arr.length).join(' '), nombreArchivo + "x", false);
+                        console.log("Se hizo una nueva");
+                    }
+                    break;
+                } else {
+                    newRes += '\n' + arr[i] + " ";
+                    line++;
+                }
+            } else
+                newRes = newRes2;
+        }
+
+        var pointY = 200;
+        if (withTitle) {
+            pointY = 350 + 100 * lineTitle;
+        }
+        ctx.fillText(newRes, (canvas.width / 2), pointY);
+
+        canvas.createJPEGStream().pipe(fs.createWriteStream(path.join(__dirname, nombreArchivo + '.jpg'))).on('finish', resolve);
+
+
+        console.log('Imagenes creadas');
+    });
+}
+
+//
 
 function ResumeToArray(resumen) {
     var arr = [];
@@ -169,11 +288,171 @@ async function tuitearMedia(q) {
                     }
                 });
 
+            } else {
+                console.log(error);
             }
         });
     })
 }
 
+async function TweetMediasAndStatus(q) {
+    var data = [];
+
+    data.push(fs.readFileSync('image.jpg'));
+
+    try {
+        if (fs.existsSync('resumen.jpg')) {
+            data.push(fs.readFileSync('resumen.jpg'));
+            console.log(' 0');
+        }
+    } catch (err) {}
+    try {
+        if (fs.existsSync('resumenx.jpg')) {
+            data.push(fs.readFileSync('resumenx.jpg'));
+            console.log(' 0');
+        }
+    } catch (err) {}
+    try {
+        if (fs.existsSync('resumenxx.jpg')) {
+            data.push(fs.readFileSync('resumenxx.jpg'));
+            console.log(' 0');
+        }
+    } catch (err) {}
+
+    var medias = [];
+    for (let i = 0; i < data.length; i++) {
+        console.log('Data ' + i + ' ' + data[i].length);
+        medias.push(await subirMedia(data[i]));
+    }
+
+    await tuitearTweetAndMedias(q, medias.join(','));
+
+}
+
+async function subirMedia(data) {
+    return new Promise(resolve => {
+        cliente.post('media/upload', { media: data }, function(error, media, response) {
+            if (!error) {
+                resolve(media.media_id_string);
+            } else {
+                console.log(error);
+            }
+        });
+    })
+}
+
+async function tuitearTweetAndMedias(q, ids) {
+    return new Promise(resolve => {
+        var status = {
+            status: q,
+            media_ids: ids // Pass the media id string
+        }
+        cliente.post('statuses/update', status, function(error, tweet, response) {
+            if (!error) {
+                // console.log(tweet);
+                var jsnTweet = JSON.parse(JSON.stringify(tweet));
+                resolve(jsnTweet);
+            } else {
+                console.log(error);
+            }
+        });
+    });
+}
+
+//
+
+async function TweetMediaChinked() {
+    var data = [];
+    data.push(require('fs').readFileSync('image.jpg'));
+
+    // try {
+    //     data.push(require('fs').readFileSync('resumen.jpg'));
+    // } catch (err) {}
+    // try {
+    //     data.push(require('fs').readFileSync('resumenx.jpg'));
+    // } catch (err) {}
+
+    const mediaType = 'image/gif';
+    var medias = [];
+    var index = -1;
+    for (let i = 0; i < data.length; i++) {
+        var mediaSize = data[i].size;
+        console.log("CHUNK--------------------------------------");
+        var mdata = await initUpload(mediaType, mediaSize);
+        var id = mdata.media_id_string;
+        console.log(mdata);
+        index++;
+        await appendUpload(id, data[i], index);
+        console.log("CHUNK2--------------------------------------");
+        medias.push(id);
+    }
+    console.log(medias[0]);
+    tuitearMedia('Hola', medias[0]);
+
+}
+
+async function tuitearMedia(q, ids) {
+    return new Promise(resolve => {
+        var status = {
+            status: q,
+            media_ids: ids
+        }
+        cliente.post('statuses/update', status, function(error, tweet, response) {
+            if (!error) {
+                var jsnTweet = JSON.parse(JSON.stringify(tweet));
+                resolve(jsnTweet);
+            } else {
+                console.log(error);
+            }
+        });
+    })
+}
+
+function initUpload(mediaType, mediaSize) {
+    return new Promise(resolve => {
+        return makePost('media/upload', {
+            command: 'INIT',
+            total_bytes: mediaSize,
+            media_type: mediaType,
+        }).then(data => resolve(data));
+    });
+}
+
+function appendUpload(mediaId, mediaData, index) {
+    console.log(mediaId);
+    return new Promise(resolve => {
+        makePost('media/upload', {
+            command: 'APPEND',
+            media_id: mediaId,
+            media: mediaData,
+            segment_index: index
+        }).then(data => resolve());
+    });
+}
+
+function finalizeUpload(mediaId) {
+    console.log("FINALIZE " + mediaId);
+    return makePost('media/upload', {
+            Name: 'test',
+            command: 'FINALIZE',
+            media_id: mediaId
+        }).then(data => console.log("LIIIIIIIIIIIISTO"))
+        .catch(err => console.log(err));
+}
+
+function makePost(endpoint, params) {
+    return new Promise((resolve, reject) => {
+        cliente.post(endpoint, params, (error, data, response) => {
+            if (error) {
+                reject(error);
+            } else {
+                resolve(data);
+            }
+        });
+    });
+}
+
+//
 
 function SearchAndFollow(q) {
     new Promise(resolve => {
