@@ -31,8 +31,8 @@ app.get('/', function(request, response) {
 });
 
 
-setInterval(Loop, 1800000);
-// Loop();
+// setInterval(Loop, 1800000);
+Loop();
 //removeResumes();
 async function Loop() {
     await init();
