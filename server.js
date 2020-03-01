@@ -31,8 +31,8 @@ app.get('/', function(request, response) {
 });
 
 
-//setInterval(Loop, 1800000);
-Loop();
+setInterval(Loop, 1800000);
+// Loop();
 //removeResumes();
 async function Loop() {
     await init();
@@ -113,11 +113,11 @@ async function Loop() {
     console.log("--------------------------------------");
 
 
-    // SearchAndFollow({
-    //     q: 'pelicula',
-    //     count: 50,
-    //     result_type: 'recent'
-    // });
+    SearchAndFollow({
+        q: 'pelicula',
+        count: 50,
+        result_type: 'recent'
+    });
     console.log("PEOPLE FOLLOWED");
     console.log("--------------------------------------");
     removeResumes();
