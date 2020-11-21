@@ -11,6 +11,9 @@ var helpers = require("./helpers");
 var twitterService = require("./twitterService");
 const { Initialize } = require("./peliculas");
 
+console.log("Hi!");
+Loop();
+
 setInterval(Loop, 1800000);
 
 async function Loop() {
