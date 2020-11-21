@@ -12,9 +12,9 @@ var twitterService = require("./twitterService");
 const { Initialize } = require("./peliculas");
 
 console.log("Hi!");
-Loop();
+// Loop();
 
-setInterval(Loop, 1800000);
+// setInterval(Loop, 1800000);
 
 async function Loop() {
   await peliculas.Initialize();
